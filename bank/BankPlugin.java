@@ -37,15 +37,7 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.InventoryID;
-import net.runelite.api.Item;
-import net.runelite.api.ItemComposition;
-import net.runelite.api.ItemContainer;
-import net.runelite.api.ItemID;
-import net.runelite.api.MenuEntry;
-import net.runelite.api.ScriptID;
-import net.runelite.api.VarClientStr;
+import net.runelite.api.*;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuShouldLeftClick;
@@ -68,9 +60,9 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.util.QuantityFormatter;
 
 @PluginDescriptor(
-	name = "Bank",
-	description = "Modifications to the banking interface",
-	tags = {"grand", "exchange", "high", "alchemy", "prices", "deposit"}
+		name = "Bank",
+		description = "Modifications to the banking interface",
+		tags = {"grand", "exchange", "high", "alchemy", "prices", "deposit"}
 )
 @Slf4j
 public class BankPlugin extends Plugin
@@ -82,8 +74,8 @@ public class BankPlugin extends Plugin
 
 	private static final String NUMBER_REGEX = "[0-9]+(\\.[0-9]+)?[kmb]?";
 	private static final Pattern VALUE_SEARCH_PATTERN = Pattern.compile("^(?<mode>ge|ha|alch)?" +
-		" *(((?<op>[<>=]|>=|<=) *(?<num>" + NUMBER_REGEX + "))|" +
-		"((?<num1>" + NUMBER_REGEX + ") *- *(?<num2>" + NUMBER_REGEX + ")))$", Pattern.CASE_INSENSITIVE);
+			" *(((?<op>[<>=]|>=|<=) *(?<num>" + NUMBER_REGEX + "))|" +
+			"((?<num1>" + NUMBER_REGEX + ") *- *(?<num2>" + NUMBER_REGEX + ")))$", Pattern.CASE_INSENSITIVE);
 
 	@Inject
 	private Client client;
@@ -174,8 +166,8 @@ public class BankPlugin extends Plugin
 		for (MenuEntry entry : menuEntries)
 		{
 			if ((entry.getOption().equals(DEPOSIT_WORN) && config.rightClickBankEquip())
-				|| (entry.getOption().equals(DEPOSIT_INVENTORY) && config.rightClickBankInventory())
-				|| (entry.getOption().equals(DEPOSIT_LOOT) && config.rightClickBankLoot()))
+					|| (entry.getOption().equals(DEPOSIT_INVENTORY) && config.rightClickBankInventory())
+					|| (entry.getOption().equals(DEPOSIT_LOOT) && config.rightClickBankLoot()))
 			{
 				event.setForceRightClick(true);
 				return;
@@ -187,8 +179,8 @@ public class BankPlugin extends Plugin
 	public void onMenuEntryAdded(MenuEntryAdded event)
 	{
 		if ((event.getOption().equals(DEPOSIT_WORN) && config.rightClickBankEquip())
-			|| (event.getOption().equals(DEPOSIT_INVENTORY) && config.rightClickBankInventory())
-			|| (event.getOption().equals(DEPOSIT_LOOT) && config.rightClickBankLoot()))
+				|| (event.getOption().equals(DEPOSIT_INVENTORY) && config.rightClickBankInventory())
+				|| (event.getOption().equals(DEPOSIT_LOOT) && config.rightClickBankLoot()))
 		{
 			forceRightClickFlag = true;
 		}
@@ -662,8 +654,19 @@ public class BankPlugin extends Plugin
 				return false;
 		}
 	}
+
+
+	private int getOreValue(int itemId){
+		return 0;
+	}
+
 	private int getRawPrice(int itemId)
 	{
+
+		int smithingLevel = client.getRealSkillLevel(Skill.SMITHING);
+		int craftingLevel = client.getRealSkillLevel(Skill.CRAFTING);
+
+
 		switch (itemId)
 		{
 			case ItemID.COINS_995:
@@ -671,25 +674,39 @@ public class BankPlugin extends Plugin
 			case ItemID.PLATINUM_TOKEN:
 				return 1000;
 			case ItemID.GREEN_DRAGONHIDE:
-				return 1540;
+				if(craftingLevel >= 63) return 1540;
+				else return 0;
 			case ItemID.GREEN_DRAGON_LEATHER:
-				return 1560;
+				if(craftingLevel >= 63) return 1560;
+				else return 0;
 			case ItemID.BLUE_DRAGONHIDE:
-				return 1852;
+				if(craftingLevel >= 71) return 1852;
+				else return 0;
 			case ItemID.BLUE_DRAGON_LEATHER:
-				return 1872;
+				if(craftingLevel >= 71) return 1872;
+				else return 0;
 			case ItemID.RED_DRAGONHIDE:
-				return 2226;
+				if(craftingLevel >= 77) return 2226;
+				else return 0;
 			case ItemID.RED_DRAGON_LEATHER:
-				return 2246;
+				if(craftingLevel >= 77) return 2246;
+				else return 0;
 			case ItemID.BLACK_DRAGONHIDE:
-				return 2676;
+				if(craftingLevel >= 84) return 2676;
+				else return 0;
 			case ItemID.BLACK_DRAGON_LEATHER:
-				return 2696;
+				if(craftingLevel >= 84) return 2696;
+				else return 0;
+			case ItemID.MITHRIL_BAR:
+				if (smithingLevel >= 68) return 624;
+				else return 0;
 			case ItemID.ADAMANTITE_BAR:
-				return 1996;
+				if (smithingLevel >= 88) return 1996;
+				else return 0;
 			case ItemID.RUNITE_BAR:
-				return 12800;
+				if (smithingLevel >= 99) return 12800;
+				else if (smithingLevel >= 89) return 12480;
+				else return 0;
 			case ItemID.ONYX_BOLT_TIPS:
 				return 8179;
 			default:
