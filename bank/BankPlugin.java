@@ -77,6 +77,8 @@ public class BankPlugin extends Plugin
 			" *(((?<op>[<>=]|>=|<=) *(?<num>" + NUMBER_REGEX + "))|" +
 			"((?<num1>" + NUMBER_REGEX + ") *- *(?<num2>" + NUMBER_REGEX + ")))$", Pattern.CASE_INSENSITIVE);
 
+
+
 	@Inject
 	private Client client;
 
@@ -266,6 +268,12 @@ public class BankPlugin extends Plugin
 			final ItemContainer bankContainer = client.getItemContainer(InventoryID.BANK);
 			final Widget[] children = bankItemContainer.getChildren();
 			long geTotal = 0, haTotal = 0, rawTotal = 0;
+			int smithingLevel = client.getRealSkillLevel(Skill.SMITHING);
+			int craftingLevel = client.getRealSkillLevel(Skill.CRAFTING);
+			int coalQty = 0;
+			int mithQty = 0;
+			int addyQty = 0;
+			int runeQty = 0;
 
 			if (children != null)
 			{
@@ -275,22 +283,44 @@ public class BankPlugin extends Plugin
 				// of bank size, but we only need to check up to the bank size.
 				for (int i = 0; i < bankContainer.size(); ++i)
 				{
+
 					Widget child = children[i];
 					if (child != null && !child.isSelfHidden() && child.getItemId() > -1)
 					{
 						final int alchPrice = getHaPrice(child.getItemId());
-						final int rawPrice = getRawPrice((child.getItemId()));
+						final int rawPrice = getRawPrice((child.getItemId()), craftingLevel, smithingLevel);
 						geTotal += (long) itemManager.getItemPrice(child.getItemId()) * child.getItemQuantity();
 						haTotal += (long) alchPrice * child.getItemQuantity();
 						rawTotal += (long) rawPrice * child.getItemQuantity();
+
+						//needed to capture quantity of coal, mith, addy, and rune for the getOreValue function to work properly
+						switch(child.getItemId())
+						{
+							case ItemID.COAL:
+								coalQty = child.getItemQuantity();
+								break;
+							case ItemID.MITHRIL_ORE:
+								mithQty = child.getItemQuantity();
+								break;
+							case ItemID.ADAMANTITE_ORE:
+								addyQty = child.getItemQuantity();
+								break;
+							case ItemID.RUNITE_ORE:
+								runeQty = child.getItemQuantity();
+								break;
+							default:
+								break;
+						}
 					}
 				}
 
-				Widget bankTitle = client.getWidget(WidgetInfo.BANK_TITLE_BAR);
-				bankTitle.setText(bankTitle.getText() + createValueText(geTotal, haTotal, rawTotal));
+				rawTotal += (long) getOreValue(smithingLevel, coalQty, mithQty, addyQty, runeQty);
+
 			}
-		}
-		else if (event.getScriptId() == ScriptID.BANKMAIN_SEARCH_REFRESH)
+			Widget bankTitle = client.getWidget(WidgetInfo.BANK_TITLE_BAR);
+			bankTitle.setText(bankTitle.getText() + createValueText(geTotal, haTotal, rawTotal));
+
+		} else if (event.getScriptId() == ScriptID.BANKMAIN_SEARCH_REFRESH)
 		{
 			// vanilla only lays out the bank every 40 client ticks, so if the search input has changed,
 			// and the bank wasn't laid out this tick, lay it out early
@@ -524,9 +554,13 @@ public class BankPlugin extends Plugin
 			return null;
 		}
 
+
+
 		long ge = 0;
 		long alch = 0;
 		long raw = 0;
+		int smithingLevel = client.getRealSkillLevel(Skill.SMITHING);
+		int craftingLevel = client.getRealSkillLevel(Skill.CRAFTING);
 
 		for (final Item item : items)
 		{
@@ -540,7 +574,7 @@ public class BankPlugin extends Plugin
 
 			alch += (long) getHaPrice(id) * qty;
 			ge += (long) itemManager.getItemPrice(id) * qty;
-			raw += (long) getRawPrice(id) * qty;
+			raw += (long) getRawPrice(id, craftingLevel, smithingLevel) * qty;
 		}
 
 		return new ContainerPrices(ge, alch, raw);
@@ -559,7 +593,9 @@ public class BankPlugin extends Plugin
 		}
 	}
 
-	private boolean isAlchable(int itemId) {
+	//determines which items are deemed as alchables for the raw gp calculation
+	private boolean isAlchable(int itemId)
+	{
 		switch (itemId){
 			case ItemID.RUNE_PLATELEGS:
 			case ItemID.RUNE_PLATESKIRT:
@@ -655,18 +691,49 @@ public class BankPlugin extends Plugin
 		}
 	}
 
+	//determines the value of ores for the raw gp option, based on quantity of ores in bank and players smithing level
+	private int getOreValue(int smithingLevel, int coalQty, int mithQty, int addyQty, int runeQty)
+	{
+		int totalValue = 0;
 
-	private int getOreValue(int itemId){
-		return 0;
+		//begin consuming coal using the best ore available, and proceed from best to worst ore until coal is gone
+		if(smithingLevel>=89)
+		{
+			while (coalQty >= 4 && runeQty >= 1) {
+				coalQty = coalQty - 4;
+				runeQty = runeQty - 1;
+				if(smithingLevel>=99)
+				{
+					totalValue += 12800;
+				}
+				else totalValue += 12480;
+			}
+		}
+
+		if(smithingLevel>=88)
+		{
+			while (coalQty >= 3 && addyQty >= 1) {
+				coalQty = coalQty - 3;
+				addyQty = addyQty - 1;
+				totalValue += 1996;
+			}
+		}
+
+		if(smithingLevel>=68)
+		{
+			while (coalQty >= 2 && mithQty >= 1) {
+				coalQty = coalQty - 2;
+				mithQty = mithQty - 1;
+				totalValue += 624;
+			}
+		}
+
+		return totalValue;
 	}
 
-	private int getRawPrice(int itemId)
+
+	private int getRawPrice(int itemId, int craftingLevel, int smithingLevel)
 	{
-
-		int smithingLevel = client.getRealSkillLevel(Skill.SMITHING);
-		int craftingLevel = client.getRealSkillLevel(Skill.CRAFTING);
-
-
 		switch (itemId)
 		{
 			case ItemID.COINS_995:
@@ -674,45 +741,85 @@ public class BankPlugin extends Plugin
 			case ItemID.PLATINUM_TOKEN:
 				return 1000;
 			case ItemID.GREEN_DRAGONHIDE:
-				if(craftingLevel >= 63) return 1540;
+				if(craftingLevel >= 63)
+				{
+					return 1540;
+				}
 				else return 0;
 			case ItemID.GREEN_DRAGON_LEATHER:
-				if(craftingLevel >= 63) return 1560;
+				if(craftingLevel >= 63)
+				{
+					return 1560;
+				}
 				else return 0;
 			case ItemID.BLUE_DRAGONHIDE:
-				if(craftingLevel >= 71) return 1852;
+				if(craftingLevel >= 71)
+				{
+					return 1852;
+				}
 				else return 0;
 			case ItemID.BLUE_DRAGON_LEATHER:
-				if(craftingLevel >= 71) return 1872;
+				if(craftingLevel >= 71)
+				{
+					return 1872;
+				}
 				else return 0;
 			case ItemID.RED_DRAGONHIDE:
-				if(craftingLevel >= 77) return 2226;
+				if(craftingLevel >= 77)
+				{
+					return 2226;
+				}
 				else return 0;
 			case ItemID.RED_DRAGON_LEATHER:
-				if(craftingLevel >= 77) return 2246;
+				if(craftingLevel >= 77)
+				{
+					return 2246;
+				}
 				else return 0;
 			case ItemID.BLACK_DRAGONHIDE:
-				if(craftingLevel >= 84) return 2676;
+				if(craftingLevel >= 84)
+				{
+					return 2676;
+				}
 				else return 0;
 			case ItemID.BLACK_DRAGON_LEATHER:
-				if(craftingLevel >= 84) return 2696;
+				if(craftingLevel >= 84)
+				{
+					return 2696;
+				}
 				else return 0;
 			case ItemID.MITHRIL_BAR:
-				if (smithingLevel >= 68) return 624;
+				if (smithingLevel >= 68)
+				{
+					return 624;
+				}
 				else return 0;
 			case ItemID.ADAMANTITE_BAR:
-				if (smithingLevel >= 88) return 1996;
+				if (smithingLevel >= 88)
+				{
+					return 1996;
+				}
 				else return 0;
 			case ItemID.RUNITE_BAR:
-				if (smithingLevel >= 99) return 12800;
-				else if (smithingLevel >= 89) return 12480;
+				if (smithingLevel >= 99)
+				{
+					return 12800;
+				}
+				else if (smithingLevel >= 89)
+				{
+					return 12480;
+				}
 				else return 0;
 			case ItemID.ONYX_BOLT_TIPS:
 				return 8179;
 			default:
-				if (isAlchable(itemId)) return itemManager.getItemComposition(itemId).getHaPrice();
+				if (isAlchable(itemId))
+				{
+					return itemManager.getItemComposition(itemId).getHaPrice();
+				}
 				else return 0;
 		}
+
 	}
 
 
