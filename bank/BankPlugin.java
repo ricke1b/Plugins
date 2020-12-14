@@ -74,8 +74,8 @@ public class BankPlugin extends Plugin
 
 	private static final String NUMBER_REGEX = "[0-9]+(\\.[0-9]+)?[kmb]?";
 	private static final Pattern VALUE_SEARCH_PATTERN = Pattern.compile("^(?<mode>ge|ha|alch)?" +
-			" *(((?<op>[<>=]|>=|<=) *(?<num>" + NUMBER_REGEX + "))|" +
-			"((?<num1>" + NUMBER_REGEX + ") *- *(?<num2>" + NUMBER_REGEX + ")))$", Pattern.CASE_INSENSITIVE);
+		" *(((?<op>[<>=]|>=|<=) *(?<num>" + NUMBER_REGEX + "))|" +
+		"((?<num1>" + NUMBER_REGEX + ") *- *(?<num2>" + NUMBER_REGEX + ")))$", Pattern.CASE_INSENSITIVE);
 
 
 
@@ -168,8 +168,8 @@ public class BankPlugin extends Plugin
 		for (MenuEntry entry : menuEntries)
 		{
 			if ((entry.getOption().equals(DEPOSIT_WORN) && config.rightClickBankEquip())
-					|| (entry.getOption().equals(DEPOSIT_INVENTORY) && config.rightClickBankInventory())
-					|| (entry.getOption().equals(DEPOSIT_LOOT) && config.rightClickBankLoot()))
+				|| (entry.getOption().equals(DEPOSIT_INVENTORY) && config.rightClickBankInventory())
+				|| (entry.getOption().equals(DEPOSIT_LOOT) && config.rightClickBankLoot()))
 			{
 				event.setForceRightClick(true);
 				return;
@@ -181,8 +181,8 @@ public class BankPlugin extends Plugin
 	public void onMenuEntryAdded(MenuEntryAdded event)
 	{
 		if ((event.getOption().equals(DEPOSIT_WORN) && config.rightClickBankEquip())
-				|| (event.getOption().equals(DEPOSIT_INVENTORY) && config.rightClickBankInventory())
-				|| (event.getOption().equals(DEPOSIT_LOOT) && config.rightClickBankLoot()))
+			|| (event.getOption().equals(DEPOSIT_INVENTORY) && config.rightClickBankInventory())
+			|| (event.getOption().equals(DEPOSIT_LOOT) && config.rightClickBankLoot()))
 		{
 			forceRightClickFlag = true;
 		}
@@ -315,12 +315,14 @@ public class BankPlugin extends Plugin
 				}
 
 				rawTotal += (long) getOreValue(smithingLevel, coalQty, mithQty, addyQty, runeQty);
+				Widget bankTitle = client.getWidget(WidgetInfo.BANK_TITLE_BAR);
+				bankTitle.setText(bankTitle.getText() + createValueText(geTotal, haTotal, rawTotal));
 
 			}
-			Widget bankTitle = client.getWidget(WidgetInfo.BANK_TITLE_BAR);
-			bankTitle.setText(bankTitle.getText() + createValueText(geTotal, haTotal, rawTotal));
 
-		} else if (event.getScriptId() == ScriptID.BANKMAIN_SEARCH_REFRESH)
+
+		}
+		else if (event.getScriptId() == ScriptID.BANKMAIN_SEARCH_REFRESH)
 		{
 			// vanilla only lays out the bank every 40 client ticks, so if the search input has changed,
 			// and the bank wasn't laid out this tick, lay it out early
@@ -596,7 +598,8 @@ public class BankPlugin extends Plugin
 	//determines which items are deemed as alchables for the raw gp calculation
 	private boolean isAlchable(int itemId)
 	{
-		switch (itemId){
+		switch (itemId)
+		{
 			case ItemID.RUNE_PLATELEGS:
 			case ItemID.RUNE_PLATESKIRT:
 			case ItemID.RUNE_CHAINBODY:
@@ -699,7 +702,8 @@ public class BankPlugin extends Plugin
 		//begin consuming coal using the best ore available, and proceed from best to worst ore until coal is gone
 		if(smithingLevel>=89)
 		{
-			while (coalQty >= 4 && runeQty >= 1) {
+			while (coalQty >= 4 && runeQty >= 1)
+			{
 				coalQty = coalQty - 4;
 				runeQty = runeQty - 1;
 				if(smithingLevel>=99)
@@ -712,7 +716,8 @@ public class BankPlugin extends Plugin
 
 		if(smithingLevel>=88)
 		{
-			while (coalQty >= 3 && addyQty >= 1) {
+			while (coalQty >= 3 && addyQty >= 1)
+			{
 				coalQty = coalQty - 3;
 				addyQty = addyQty - 1;
 				totalValue += 1996;
@@ -721,7 +726,8 @@ public class BankPlugin extends Plugin
 
 		if(smithingLevel>=68)
 		{
-			while (coalQty >= 2 && mithQty >= 1) {
+			while (coalQty >= 2 && mithQty >= 1)
+			{
 				coalQty = coalQty - 2;
 				mithQty = mithQty - 1;
 				totalValue += 624;
